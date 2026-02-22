@@ -1,5 +1,6 @@
--- [[ MEGA SYNC: Auto-Detect Model & Stats ]] --
+-- [[ PRECISION SNATCHER: 1m Range Copy ]] --
 local p = game.Players.LocalPlayer
+local char = p.Character or p.CharacterAdded:Wait()
 
 local function notify(msg, color)
     local sg = Instance.new("ScreenGui", p.PlayerGui)
@@ -13,50 +14,62 @@ local function notify(msg, color)
     task.delay(4, function() sg:Destroy() end)
 end
 
-notify("AUTO SCANNING... STAND NEAR HYDRA", Color3.fromRGB(255, 255, 0))
+notify("PRECISION MODE: STAND ON YOUR PET", Color3.fromRGB(255, 255, 255)) -- 白色
 
--- 名前に関わらず、基地にある「一番それっぽいモデル」を盗む関数
-local function findAnythingOnBase()
-    -- 基地（Workspace）の中から、プレイヤーの近くにあるモデルを探す
+local function snatchNearbyPet()
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if not root then return nil end
+    
+    local closestModel = nil
+    local shortestDist = 1.5 -- 半径約1メートル（1.5スタッド）に絞り込み
+
     for _, obj in pairs(game.Workspace:GetDescendants()) do
-        if obj:IsA("Model") and obj ~= p.Character then
-            -- ヒドラやカネローニという文字が含まれていれば確定
-            if obj.Name:lower():find("hydra") or obj.Name:lower():find("cannelloni") or obj.Name:lower():find("dragon") then
-                return obj
+        if obj:IsA("Model") and not obj:IsDescendantOf(char) then
+            local objRoot = obj:FindFirstChildWhichIsA("BasePart", true)
+            if objRoot then
+                local dist = (root.Position - objRoot.Position).Magnitude
+                if dist < shortestDist then
+                    shortestDist = dist
+                    closestModel = obj
+                end
             end
         end
     end
-    return nil
+    return closestModel
 end
 
 task.spawn(function()
     while task.wait(0.3) do
-        local bestPet = findAnythingOnBase()
+        local targetPet = snatchNearbyPet()
         
         for _, v in pairs(p.PlayerGui:GetDescendants()) do
-            -- テキスト書き換え
+            -- 名前とステータス固定
             if v:IsA("TextLabel") and v.Visible then
                 if v.Text:find("Pizzanini") or v.Text:find("Nubini") then
-                    v.Text = "Hydra Dragon Cannelloni" -- ここで本物の名前に固定
+                    v.Text = "Hydra Dragon Cannelloni"
                     v.TextColor3 = Color3.fromRGB(255, 120, 0)
+                elseif v.Text:find("/") or v.Text:find("Money") then
+                    v.Text = "1.25T/s [MAX]" 
                 end
             end
 
-            -- 姿の書き換え
-            if v:IsA("ViewportFrame") and v.Visible and not v:FindFirstChild("AutoDone") then
-                local model = v:FindFirstChildOfClass("Model")
-                if model and bestPet then
-                    for _, part in pairs(model:GetDescendants()) do
+            -- 1m以内のモデルを強制コピー
+            if v:IsA("ViewportFrame") and v.Visible and not v:FindFirstChild("Snatch1mDone") then
+                local modelInView = v:FindFirstChildOfClass("Model")
+                if modelInView and targetPet then
+                    for _, part in pairs(modelInView:GetDescendants()) do
                         if part:IsA("BasePart") then part.Transparency = 1 end
                     end
                     
-                    local clone = bestPet:Clone()
-                    clone.Parent = model
-                    if model.PrimaryPart then clone:SetPrimaryPartCFrame(model.PrimaryPart.CFrame) end
+                    local clone = targetPet:Clone()
+                    clone.Parent = modelInView
+                    if modelInView.PrimaryPart then
+                        clone:SetPrimaryPartCFrame(modelInView.PrimaryPart.CFrame)
+                    end
                     
                     local tag = Instance.new("BoolValue", v)
-                    tag.Name = "AutoDone"
-                    notify("🔥 HYDRA DETECTED & COPIED! 🔥", Color3.fromRGB(0, 255, 0))
+                    tag.Name = "Snatch1mDone"
+                    notify("🎯 PRECISION SNATCH SUCCESS! 🎯", Color3.fromRGB(255, 255, 0))
                 end
             end
         end
