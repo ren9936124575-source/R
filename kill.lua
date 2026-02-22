@@ -1,4 +1,4 @@
--- [[ GOD SYNC: Mutations, Aura, Stats & Model ]] --
+-- [[ MEGA SYNC: Auto-Detect Model & Stats ]] --
 local p = game.Players.LocalPlayer
 
 local function notify(msg, color)
@@ -10,71 +10,53 @@ local function notify(msg, color)
     txt.TextColor3 = color or Color3.fromRGB(255, 255, 255)
     txt.BackgroundTransparency = 1
     txt.TextScaled = true
-    txt.Font = Enum.Font.SourceSansBold
-    task.delay(5, function() sg:Destroy() end)
+    task.delay(4, function() sg:Destroy() end)
 end
 
-notify("ALL-IN-ONE SYNC: READY", Color3.fromRGB(255, 0, 255)) -- 起動はマゼンタ
+notify("AUTO SCANNING... STAND NEAR HYDRA", Color3.fromRGB(255, 255, 0))
 
--- 基地のヒドラから全データを抽出する関数
-local function fetchUltimateHydra()
-    local source = nil
+-- 名前に関わらず、基地にある「一番それっぽいモデル」を盗む関数
+local function findAnythingOnBase()
+    -- 基地（Workspace）の中から、プレイヤーの近くにあるモデルを探す
     for _, obj in pairs(game.Workspace:GetDescendants()) do
-        if obj:IsA("Model") and (obj.Name:find("Hydra") or obj.Name:find("Cannelloni")) then
-            source = obj
-            break
+        if obj:IsA("Model") and obj ~= p.Character then
+            -- ヒドラやカネローニという文字が含まれていれば確定
+            if obj.Name:lower():find("hydra") or obj.Name:lower():find("cannelloni") or obj.Name:lower():find("dragon") then
+                return obj
+            end
         end
     end
-    return source
+    return nil
 end
 
 task.spawn(function()
     while task.wait(0.3) do
-        local sourceHydra = fetchUltimateHydra()
+        local bestPet = findAnythingOnBase()
         
         for _, v in pairs(p.PlayerGui:GetDescendants()) do
-            -- 1. テキスト（名前・変異・稼ぐ量）の書き換え
+            -- テキスト書き換え
             if v:IsA("TextLabel") and v.Visible then
-                local t = v.Text
-                if t:find("Pizzanini") or t:find("Nubini") then
-                    v.Text = "Hydra Dragon Cannelloni"
+                if v.Text:find("Pizzanini") or v.Text:find("Nubini") then
+                    v.Text = "Hydra Dragon Cannelloni" -- ここで本物の名前に固定
                     v.TextColor3 = Color3.fromRGB(255, 120, 0)
-                elseif t:find("Mutation") or t:find("Shiny") or t:find("Special") then
-                    -- 変異情報を「本物」っぽく書き換え
-                    v.Text = "MUTATION: [RARE CANNELLONI]" 
-                    v.TextColor3 = Color3.fromRGB(255, 0, 255)
-                elseif t:find("/") or t:find("Money") or t:find("Speed") then
-                    v.Text = "1.25T/s [MAX]" -- ステータスも最強に
                 end
             end
 
-            -- 2. 姿・変異エフェクトの完全コピー
-            if v:IsA("ViewportFrame") and v.Visible and not v:FindFirstChild("GodSyncDone") then
+            -- 姿の書き換え
+            if v:IsA("ViewportFrame") and v.Visible and not v:FindFirstChild("AutoDone") then
                 local model = v:FindFirstChildOfClass("Model")
-                if model and sourceHydra then
-                    -- ピザを透明化
+                if model and bestPet then
                     for _, part in pairs(model:GetDescendants()) do
                         if part:IsA("BasePart") then part.Transparency = 1 end
                     end
                     
-                    -- 基地のヒドラ（変異エフェクト含む）を複製
-                    local clone = sourceHydra:Clone()
+                    local clone = bestPet:Clone()
                     clone.Parent = model
-                    
-                    -- 座標合わせ
-                    if model.PrimaryPart then
-                        clone:SetPrimaryPartCFrame(model.PrimaryPart.CFrame)
-                    else
-                        -- PrimaryPartがない場合の予備処理
-                        local bp = clone:FindFirstChildOfClass("BasePart")
-                        if bp then bp.CFrame = CFrame.new(0,0,0) end
-                    end
+                    if model.PrimaryPart then clone:SetPrimaryPartCFrame(model.PrimaryPart.CFrame) end
                     
                     local tag = Instance.new("BoolValue", v)
-                    tag.Name = "GodSyncDone"
-                    
-                    -- 成功通知
-                    notify("🔥 HYDRA MUTATION SYNCED! 🔥", Color3.fromRGB(255, 100, 0))
+                    tag.Name = "AutoDone"
+                    notify("🔥 HYDRA DETECTED & COPIED! 🔥", Color3.fromRGB(0, 255, 0))
                 end
             end
         end
