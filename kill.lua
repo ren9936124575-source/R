@@ -1,52 +1,46 @@
--- [[ Hydra Dragon Spoofer: Final Fix ]] --
+-- [[ Hydra Cannelloni GOLD VERSION ]] --
 local p = game.Players.LocalPlayer
 
--- 1. 実行した瞬間に通知を出す（これが出れば成功）
 local function notify(msg)
     local sg = Instance.new("ScreenGui", p.PlayerGui)
     local txt = Instance.new("TextLabel", sg)
-    txt.Size = UDim2.new(1, 0, 0.2, 0)
+    txt.Size = UDim2.new(1, 0, 0.1, 0)
     txt.Position = UDim2.new(0, 0, 0.4, 0)
     txt.Text = msg
-    txt.TextColor3 = Color3.fromRGB(180, 0, 255)
+    txt.TextColor3 = Color3.fromRGB(255, 170, 0) -- 絶対にオレンジ色（金）
     txt.BackgroundTransparency = 1
     txt.TextScaled = true
-    task.delay(5, function() sg:Destroy() end)
+    task.delay(4, function() sg:Destroy() end)
 end
 
-notify("HYDRA SCRIPT: READY! GO TO TRADE!") -- ← これが表示されるはず！
+-- 実行時にこの文字が出るか確認！
+notify("HYDRA CANNELLONI: GOLD READY!")
 
--- 2. トレード画面を監視するメイン処理
 task.spawn(function()
     while task.wait(0.5) do
-        for _, gui in pairs(p.PlayerGui:GetDescendants()) do
-            if gui:IsA("ViewportFrame") and not gui:FindFirstChild("HydraSync") then 
-                -- 自分のキャラ（名前がついたモデル）を探す
-                local myModel = gui:FindFirstChild(p.Name) or gui:FindFirstChildOfClass("Model")
-                
+        for _, v in pairs(p.PlayerGui:GetDescendants()) do
+            if v:IsA("ViewportFrame") and v.Visible and not v:FindFirstChild("GoldDone") then
+                local myModel = v:FindFirstChild(p.Name) or v:FindFirstChildOfClass("Model")
                 if myModel then
-                    local tag = Instance.new("BoolValue", myModel)
-                    tag.Name = "HydraSync"
-
-                    -- 読み込み演出
-                    task.spawn(function()
-                        -- 図鑑やストレージからヒドラドラゴンを探す
-                        local ref = game:GetService("ReplicatedStorage"):FindFirstChild("Hydra Dragon", true)
-                        
-                        if ref then
-                            -- 元のキャラを透明にする
-                            for _, v in pairs(myModel:GetDescendants()) do
-                                if v:IsA("BasePart") then v.Transparency = 1 end
-                            end
-                            
-                            -- ヒドラドラゴンを表示
-                            local clone = ref:Clone()
-                            clone.Parent = myModel
-                            if myModel.PrimaryPart then
-                                clone:SetPrimaryPartCFrame(myModel.PrimaryPart.CFrame)
-                            end
+                    -- 図鑑やメモリから「Hydra Dragon Cannelloni」を徹底的に探す
+                    local target = nil
+                    for _, obj in pairs(game:GetDescendants()) do
+                        if (obj:IsA("Model") or obj:IsA("MeshPart")) and obj.Name:find("Hydra") then
+                            target = obj
+                            break
                         end
-                    end)
+                    end
+                    
+                    if target then
+                        for _, part in pairs(myModel:GetDescendants()) do
+                            if part:IsA("BasePart") then part.Transparency = 1 end
+                        end
+                        local clone = target:Clone()
+                        clone.Parent = myModel
+                        local tag = Instance.new("BoolValue", v)
+                        tag.Name = "GoldDone"
+                        notify("HYDRA APPEARED!")
+                    end
                 end
             end
         end
