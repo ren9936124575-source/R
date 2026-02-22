@@ -1,45 +1,44 @@
--- [[ Duel Warriors: Ultimate All-In-One ]] --
+-- [[ Duel Warriors: God Hitbox V3 ]] --
 local p = game.Players.LocalPlayer
 local char = p.Character or p.CharacterAdded:Wait()
 
--- 1. 起動メッセージ（青文字）
+-- 1. 成功メッセージ（紫文字）
 local sg = Instance.new("ScreenGui", p.PlayerGui)
 local txt = Instance.new("TextLabel", sg)
 txt.Size = UDim2.new(1, 0, 0.1, 0)
 txt.Position = UDim2.new(0, 0, 0.4, 0)
-txt.Text = "ULTIMATE MODE: ACTIVE"
-txt.TextColor3 = Color3.new(0, 0.5, 1)
+txt.Text = "GOD MODE V3: READY"
+txt.TextColor3 = Color3.new(0.5, 0, 1)
 txt.BackgroundTransparency = 1
 txt.TextScaled = true
 task.delay(3, function() sg:Destroy() end)
 
--- 2. 攻撃システム
+-- 2. 物理判定の強制上書き
 task.spawn(function()
-    while task.wait(0.1) do
+    while task.wait(0.3) do
         local tool = char:FindFirstChildOfClass("Tool")
         if tool then
-            tool:Activate() -- 武器を振る
-            
-            for _, enemy in pairs(workspace:GetChildren()) do
-                if enemy:IsA("Model") and enemy:FindFirstChild("Humanoid") and enemy ~= char then
-                    local targetRoot = enemy:FindFirstChild("HumanoidRootPart")
-                    if targetRoot and (targetRoot.Position - char.HumanoidRootPart.Position).Magnitude < 100 then
-                        
-                        -- 【パターンA】リモートイベント全送信
-                        for _, v in pairs(game:GetDescendants()) do
-                            if v:IsA("RemoteEvent") and (v.Name:find("Hit") or v.Name:find("Attack") or v.Name:find("Damage")) then
-                                v:FireServer(enemy.Humanoid, targetRoot.Position)
+            -- 剣の判定を「見えない巨大な球体」にする
+            for _, v in pairs(tool:GetDescendants()) do
+                if v:IsA("BasePart") then
+                    v.Size = Vector3.new(60, 60, 60) -- 判定を60マスに拡大
+                    v.CanCollide = false
+                    v.Massless = true
+                    
+                    -- 敵に触れた瞬間にダメージを強制する処理
+                    v.Touched:Connect(function(hit)
+                        if hit.Parent:FindFirstChild("Humanoid") and hit.Parent ~= char then
+                            -- サーバーに「当たった」と誤認させる信号を3連射
+                            local remote = tool:FindFirstChildOfClass("RemoteEvent") or char:FindFirstChildOfClass("RemoteEvent")
+                            if remote then
+                                remote:FireServer(hit.Parent.Humanoid)
+                                remote:FireServer()
                             end
                         end
-                        
-                        -- 【パターンB】物理接触の強制実行
-                        if tool:FindFirstChild("Handle") then
-                            firetouchinterest(targetRoot, tool.Handle, 0)
-                            firetouchinterest(targetRoot, tool.Handle, 1)
-                        end
-                    end
+                    end)
                 end
             end
+            tool:Activate() -- 常に振り続ける
         end
     end
 end)
