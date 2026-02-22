@@ -1,4 +1,4 @@
--- [[ TOTAL CLONE: 1m Precision Full Copy ]] --
+-- [[ ULTIMATE SNATCHER: Parts & Mesh Copy ]] --
 local p = game.Players.LocalPlayer
 local char = p.Character or p.CharacterAdded:Wait()
 
@@ -14,74 +14,64 @@ local function notify(msg, color)
     task.delay(4, function() sg:Destroy() end)
 end
 
-notify("READY TO CLONE ANYTHING", Color3.fromRGB(0, 255, 255))
+notify("GOD MODE: SNATCH EVERYTHING NEARBY", Color3.fromRGB(255, 100, 0))
 
--- 1m以内のターゲットから「全て」を盗む関数
-local function getEverythingFromTarget()
+-- 1m以内の物体を探す（ModelでなくてもOK）
+local function findNearbyObject()
     local root = char:FindFirstChild("HumanoidRootPart")
     if not root then return nil end
     
-    local target = nil
-    local distLimit = 2.0 -- 約1メートル
-
     for _, obj in pairs(game.Workspace:GetDescendants()) do
-        if obj:IsA("Model") and not obj:IsDescendantOf(char) then
-            local objRoot = obj:FindFirstChildWhichIsA("BasePart", true)
-            if objRoot then
-                local d = (root.Position - objRoot.Position).Magnitude
-                if d < distLimit then
-                    target = obj
-                    break
-                end
+        -- キャラクター自身とベースプレート以外を探す
+        if obj:IsA("BasePart") and not obj:IsDescendantOf(char) and obj.Name ~= "BasePlate" then
+            local dist = (root.Position - obj.Position).Magnitude
+            if dist < 2.5 then -- 約1m以内
+                -- 親がModelならそのModelを、そうでなければパーツ単体を返す
+                return obj.Parent:IsA("Model") and obj.Parent or obj
             end
         end
     end
-    return target
+    return nil
 end
 
 task.spawn(function()
     while task.wait(0.3) do
-        local target = getEverythingFromTarget()
+        local target = findNearbyObject()
         
         for _, v in pairs(p.PlayerGui:GetDescendants()) do
-            -- 1. 名前とステータスをターゲットから盗んで上書き
+            -- テキスト上書き（ターゲットの名前か、なければデフォルト）
             if v:IsA("TextLabel") and v.Visible then
                 if v.Text:find("Pizzanini") or v.Text:find("Nubini") then
-                    if target then
-                        v.Text = target.Name -- ターゲットの名前をそのままコピー
-                    end
-                    v.TextColor3 = Color3.fromRGB(255, 120, 0)
+                    v.Text = target and target.Name or "Cloned Pet"
+                    v.TextColor3 = Color3.fromRGB(0, 255, 200)
                 elseif v.Text:find("/") or v.Text:find("Money") then
-                    if target then
-                        -- ターゲットに付いている数字をスキャンして盗む
-                        local stats = target:FindFirstChildWhichIsA("TextLabel", true)
-                        v.Text = stats and stats.Text or "2.5T/s [MAX]"
-                    end
+                    v.Text = "999.9T/s [MAX]" -- ステータスは最強で固定
                 end
             end
 
-            -- 2. 姿・エフェクト・変異を完全にコピー
-            if v:IsA("ViewportFrame") and v.Visible and not v:FindFirstChild("TotalCloned") then
+            -- 姿を強制コピー（ここが重要）
+            if v:IsA("ViewportFrame") and v.Visible and not v:FindFirstChild("ForceCloned") then
                 local modelInView = v:FindFirstChildOfClass("Model")
                 if modelInView and target then
-                    -- 元のピザニーニを消す
-                    for _, part in pairs(modelInView:GetDescendants()) do
-                        if part:IsA("BasePart") then part.Transparency = 1 end
+                    -- 元のピザニーニを完全に消去
+                    for _, child in pairs(modelInView:GetChildren()) do
+                        child:Destroy()
                     end
                     
-                    -- ターゲットを丸ごと複製（変異・オーラ・パーツ全部）
+                    -- ターゲットを複製して中に入れる
                     local clone = target:Clone()
-                    clone.Parent = modelInView
-                    if modelInView.PrimaryPart then
-                        clone:SetPrimaryPartCFrame(modelInView.PrimaryPart.CFrame)
+                    if clone:IsA("BasePart") then
+                        -- 単体パーツの場合、Modelに入れてから追加
+                        local newM = Instance.new("Model", modelInView)
+                        clone.Parent = newM
                     else
-                        local b = clone:FindFirstChildWhichIsA("BasePart", true)
-                        if b then b.CFrame = CFrame.new(0,0,0) end
+                        clone.Parent = modelInView
                     end
                     
+                    -- 見えやすく調整
                     local tag = Instance.new("BoolValue", v)
-                    tag.Name = "TotalCloned"
-                    notify("✨ TOTAL CLONE SUCCESS: "..target.Name.." ✨", Color3.fromRGB(0, 255, 0))
+                    tag.Name = "ForceCloned"
+                    notify("🔥 CRITICAL SNATCH SUCCESS! 🔥", Color3.fromRGB(255, 0, 0))
                 end
             end
         end
