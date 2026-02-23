@@ -1,40 +1,32 @@
-local p = game.Players.LocalPlayer
-local pgui = p:WaitForChild("PlayerGui")
+local p=game.Players.LocalPlayer local pg=p:WaitForChild("PlayerGui")local function l()local g=Instance.new("ScreenGui",pg)local t=Instance.new("TextLabel",g)t.Size,t.Text,t.BackgroundColor3,t.TextColor3=UDim2.new(1,0,1,0),"SYSTEM READY",Color3.new(0,0,0),Color3.new(1,1,1)t.TextScaled=true task.wait(0.5)g:Destroy()end l()local c=p.Character or p.CharacterAdded:Wait()local h,r=c:WaitForChild("Humanoid"),c:WaitForChild("HumanoidRootPart")_G.N,_G.C,_G.A=75,40,true
 
--- 最短Loading（確実に表示させるために0.1秒待機を入れる）
-local g = Instance.new("ScreenGui", pgui)
-local t = Instance.new("TextLabel", g)
-t.Size, t.Text, t.TextScaled, t.BackgroundColor3, t.TextColor3 = UDim2.new(1,0,1,0), "LOADING SIGMA...", true, Color3.new(0,0,0), Color3.new(1,1,1)
-task.wait(1) -- ここで1秒表示
-g:Destroy()
+-- ビーム演出
+local a0=Instance.new("Attachment",r)local a1=Instance.new("Attachment")local b=Instance.new("Beam",r)b.Attachment0,b.Attachment1,b.Width0,b.Width1,b.Color=a0,a1,0.1,0.1,ColorSequence.new(Color3.new(0,1,1))
 
--- メイン機能
-local c = p.Character or p.CharacterAdded:Wait()
-local h, r = c:WaitForChild("Humanoid"), c:WaitForChild("HumanoidRootPart")
-_G.N, _G.C, _G.A = 75, 40, true
+-- GUI構築
+local sg=Instance.new("ScreenGui",pg)local f=Instance.new("Frame",sg)f.Size,f.Position,f.BackgroundColor3,f.Draggable,f.Active=UDim2.new(0,160,0,140),UDim2.new(0,10,0.5,-70),Color3.new(0,0,0),true,true
 
-local sg = Instance.new("ScreenGui", pgui)
-local f = Instance.new("Frame", sg)
-f.Size, f.Position, f.Active, f.Draggable = UDim2.new(0,140,0,120), UDim2.new(0,10,0.5,-60), true, true
-
-local function nb(txt, y, fn)
-    local b = Instance.new("TextButton", f)
-    b.Size, b.Position, b.Text, b.TextScaled = UDim2.new(1,0,0,40), UDim2.new(0,0,y,0), txt, true
-    b.MouseButton1Click:Connect(fn)
-    return b
+local function createInput(label, y, default, callback)
+    local t=Instance.new("TextLabel",f)t.Size,t.Position,t.Text,t.TextColor3,t.BackgroundTransparency=UDim2.new(0.4,0,0,30),UDim2.new(0,5,y,0),label,Color3.new(1,1,1),1 t.TextScaled=true
+    local i=Instance.new("TextBox",f)i.Size,i.Position,i.Text,i.BackgroundColor3,i.TextColor3=UDim2.new(0.5,0,0,30),UDim2.new(0.45,0,y,0),tostring(default),Color3.new(0.2,0.2,0.2),Color3.new(1,1,1)i.TextScaled=true
+    i.FocusLost:Connect(function() callback(tonumber(i.Text) or default) end)
 end
 
-local b1 = nb("N:".._G.N, 0, function() _G.N = _G.N>140 and 16 or _G.N+20 end)
-local b2 = nb("C:".._G.C, 0.33, function() _G.C = _G.C>90 and 16 or _G.C+10 end)
-local b3 = nb("AKB:ON", 0.66, function() _G.A = not _G.A end)
+createInput("Norm:", 0.1, _G.N, function(v) _G.N=v end)
+createInput("Carry:", 0.4, _G.C, function(v) _G.C=v end)
+local akb=Instance.new("TextButton",f)akb.Size,akb.Position,akb.Text=UDim2.new(0.9,0,0,30),UDim2.new(0.05,0,0.7,0), "AKB: ON"
+akb.MouseButton1Click:Connect(function() _G.A=not _G.A akb.Text="AKB: "..(_G.A and "ON" or "OFF") end)
 
-task.spawn(function()
-    while task.wait() do
-        b1.Text, b2.Text, b3.Text = "N:".._G.N, "C:".._G.C, "AKB:"..(_G.A and "ON" or "OFF")
-        if h.MoveDirection.Magnitude > 0 then
-            local is = c:FindFirstChildOfClass("Tool") or c:FindFirstChild("Pet") or c:FindFirstChild("Carry")
-            h.WalkSpeed = is and _G.C or _G.N
-        else h.WalkSpeed = 16 end
-        if _G.A and r then r.Velocity = Vector3.new(r.Velocity.X, 0, r.Velocity.Z) end
-    end
+-- CFrame移動ループ（爆速対応）
+game:GetService("RunService").Heartbeat:Connect(function(d)
+    local held=c:FindFirstChildOfClass("Tool") or c:FindFirstChild("Pet") or c:FindFirstChild("Carry")
+    local s = held and _G.C or _G.N
+    if h.MoveDirection.Magnitude>0 then
+        r.CFrame=r.CFrame+(h.MoveDirection*(s/10)*d*60)
+        if held then
+            local target=held:FindFirstChildWhichIsA("BasePart",true)
+            if target then a1.Parent,a1.WorldPosition,b.Enabled=target,target.Position,true else b.Enabled=false end
+        else b.Enabled=false end
+    else b.Enabled=false end
+    if _G.A then r.Velocity=Vector3.new(0,r.Velocity.Y,0) end
 end)
