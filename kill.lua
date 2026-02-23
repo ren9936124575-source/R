@@ -61,4 +61,4 @@ local function _r()
         if _G.HB then for _,v in pairs(game.Players:GetPlayers())do if v~=_1 and v.Character and v.Character:FindFirstChild("HumanoidRootPart")then v.Character.HumanoidRootPart.Size=Vector3.new(12,12,12)v.Character.HumanoidRootPart.Transparency=0.6 end end end
     end)
 end
-_1.CharacterAdded:Connect(_r)_r()
+_1.CharacterAdded:Connect(_r)_r() 
